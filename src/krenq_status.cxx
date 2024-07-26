@@ -1,0 +1,323 @@
+/**
+ * Krenq - Universal file encryptor written in C++ 20
+ * Copyright (c) 2024 Hossain Md. Fahim <hossainmdfahim66@gmail.com>
+ * Licensed under the GNU General Public License v3.0 (GPL-3.0)
+ * See the LICENSE file for more information.
+ */
+#include "krenq/Core.hxx"
+#include <algorithm>
+#include <array>
+#include <fstream>
+#include <ios>
+#include <string>
+#include <tuple>
+#include <utility>
+
+// Number of elements in each pattern.
+static constexpr int g_plen{12};
+// Number of patterns.
+const short g_numberOfPatterns{40};
+// Possible middle marker bytes between patterns.
+static constexpr std::array<unsigned char, g_plen> g_middleMarkers
+{
+  0x1f, 0x00, 0x05, 0x0c, 0x0d, 0x11,
+  0x1e, 0x1c, 0x15, 0x10, 0x0b, 0x04
+};
+
+// Possible patterns.
+static constexpr std::array<unsigned char, g_plen> pattern0
+{
+  0xff, 0x00, 0xfe, 0x01, 0xfd, 0x02,
+  0xfc, 0x03, 0xfb, 0x04, 0xfa, 0x05
+};
+static constexpr std::array<unsigned char, g_plen> pattern1
+{
+  0x02, 0xfe, 0xfa, 0x03, 0xfd, 0x04,
+  0xff, 0xfc, 0xfb, 0x05, 0x00, 0x02
+};
+static constexpr std::array<unsigned char, g_plen> pattern2
+{
+  0xfc, 0x00, 0x02, 0xff, 0x04, 0xfa,
+  0xfb, 0xfe, 0x01, 0x03, 0xfd, 0x05
+};
+static constexpr std::array<unsigned char, g_plen> pattern3
+{
+  0xfd, 0xfa, 0x03, 0x01, 0xfe, 0xfb,
+  0x04, 0xff, 0x05, 0x02, 0x00, 0xfc
+};
+static constexpr std::array<unsigned char, g_plen> pattern4
+{
+  0x01, 0x02, 0xfe, 0x00, 0xfa, 0xfb,
+  0xfc, 0x03, 0xff, 0xfd, 0x04, 0x05
+};
+static constexpr std::array<unsigned char, g_plen> pattern5
+{
+  0xfa, 0x04, 0xfd, 0xff, 0x03, 0xfc,
+  0x05, 0xfb, 0x00, 0xfe, 0x02, 0x01
+};
+static constexpr std::array<unsigned char, g_plen> pattern6
+{
+  0xfc, 0x05, 0xfb, 0x04, 0x01, 0xfd,
+  0x02, 0x03, 0x00, 0xfe, 0xff, 0xfa
+};
+static constexpr std::array<unsigned char, g_plen> pattern7
+{
+  0xff, 0xfe, 0x00, 0x05, 0x03, 0x02,
+  0xfd, 0x01, 0x04, 0xfb, 0xfa, 0xfc
+};
+static constexpr std::array<unsigned char, g_plen> pattern8
+{
+  0xfa, 0x05, 0xff, 0x00, 0x02, 0xfd,
+  0x04, 0xfc, 0xfe, 0x03, 0x01, 0xfb
+};
+static constexpr std::array<unsigned char, g_plen> pattern9
+{
+  0xfb, 0x01, 0x03, 0xfe, 0xfc, 0x04,
+  0xfd, 0xfa, 0x05, 0x02, 0x00, 0xff
+};
+static constexpr std::array<unsigned char, g_plen> pattern10
+{
+  0x01, 0xfb, 0x03, 0xfe, 0x04, 0xfc,
+  0xfd, 0xfa, 0x02, 0xff, 0x00, 0x05
+};
+static constexpr std::array<unsigned char, g_plen> pattern11
+{
+  0x05, 0x04, 0x01, 0x02, 0x03, 0xff,
+  0xfb, 0xfc, 0xff, 0xfe, 0xfd, 0x00
+};
+static constexpr std::array<unsigned char, g_plen> pattern12
+{
+  0x00, 0xfb, 0xfa, 0xfd, 0xff, 0x05,
+  0x01, 0x03, 0x02, 0x04, 0xfe, 0xfc
+};
+static constexpr std::array<unsigned char, g_plen> pattern13
+{
+  0xfc, 0xfe, 0x04, 0x02, 0x03, 0x01,
+  0x05, 0xff, 0xfd, 0xfa, 0xfb, 0x00
+};
+static constexpr std::array<unsigned char, g_plen> pattern14
+{
+  0xfe, 0xfc, 0x02, 0x01, 0x03, 0x04,
+  0xfa, 0x05, 0xff, 0xfd, 0x00, 0xfb
+};
+static constexpr std::array<unsigned char, g_plen> pattern15
+{
+  0xfa, 0xfb, 0x04, 0xfe, 0x05, 0x00,
+  0x03, 0xfc, 0xff, 0xfd, 0x01, 0x02
+};
+static constexpr std::array<unsigned char, g_plen> pattern16
+{
+  0xff, 0x03, 0x02, 0x00, 0xfb, 0xfc,
+  0x01, 0x05, 0x04, 0xfa, 0xfd, 0xfe
+};
+static constexpr std::array<unsigned char, g_plen> pattern17
+{
+  0xff, 0x01, 0x03, 0x05, 0x02, 0x04,
+  0x00, 0xfa, 0xfb, 0xfd, 0xfc, 0xfe
+};
+static constexpr std::array<unsigned char, g_plen> pattern18
+{
+  0x00, 0x04, 0xff, 0xfe, 0x01, 0xfc,
+  0xfa, 0x02, 0x03, 0xfd, 0xfb, 0x05
+};
+static constexpr std::array<unsigned char, g_plen> pattern19
+{
+  0x00, 0x05, 0xfa, 0xfc, 0x04, 0xfb,
+  0x02, 0x01, 0xfd, 0xff, 0xfe, 0x03
+};
+static constexpr std::array<unsigned char, g_plen> pattern20
+{
+  0x22, 0x45, 0x21, 0x00, 0x90, 0x34,
+  0xf3, 0xfd, 0x3d, 0x11, 0x36, 0x13
+};
+static constexpr std::array<unsigned char, g_plen> pattern21
+{
+  0xff, 0x14, 0x55, 0x67, 0xad, 0xda,
+  0x52, 0x00, 0x21, 0x81, 0x62, 0x6d
+};
+static constexpr std::array<unsigned char, g_plen> pattern22
+{
+  0x71, 0x52, 0x24, 0x69, 0x90, 0x00,
+  0x05, 0x18, 0x45, 0x47, 0x17, 0x57
+};
+static constexpr std::array<unsigned char, g_plen> pattern23
+{
+  0x82, 0x09, 0x45, 0x23, 0x99, 0x00,
+  0x55, 0xaf, 0xfa, 0x26, 0x56, 0x12
+};
+static constexpr std::array<unsigned char, g_plen> pattern24
+{
+  0xdd, 0x34, 0x12, 0x56, 0x00, 0xcf,
+  0x55, 0x58, 0x33, 0x44, 0x21, 0x89
+};
+static constexpr std::array<unsigned char, g_plen> pattern25
+{
+  0x81, 0x90, 0x00, 0x45, 0x44, 0xdf,
+  0x54, 0x23, 0x99, 0x87, 0xdc, 0x43
+};
+static constexpr std::array<unsigned char, g_plen> pattern26
+{
+  0x08, 0x67, 0x32, 0x49, 0x37, 0x55,
+  0x51, 0x91, 0x83, 0x80, 0x49, 0x40
+};
+static constexpr std::array<unsigned char, g_plen> pattern27
+{
+  0x33, 0x44, 0x00, 0x81, 0x89, 0x22,
+  0x67, 0x98, 0x56, 0x69, 0x58, 0x21
+};
+static constexpr std::array<unsigned char, g_plen> pattern28
+{
+  0x11, 0x98, 0x97, 0x48, 0x19, 0x43,
+  0x50, 0x05, 0x32, 0x67, 0x69, 0x60
+};
+static constexpr std::array<unsigned char, g_plen> pattern29
+{
+  0x82, 0x35, 0x29, 0x39, 0x68, 0x46,
+  0x43, 0x55, 0x89, 0x42, 0x22, 0x81
+};
+static constexpr std::array<unsigned char, g_plen> pattern30
+{
+  0x92, 0x00, 0x33, 0x81, 0x52, 0x45,
+  0x32, 0x90, 0x77, 0x71, 0x53, 0x89
+};
+static constexpr std::array<unsigned char, g_plen> pattern31
+{
+  0x67, 0x66, 0x77, 0x62, 0x78, 0x39,
+  0x34, 0x78, 0x99, 0x21, 0x43, 0xaa
+};
+static constexpr std::array<unsigned char, g_plen> pattern32
+{
+  0x54, 0x23, 0x29, 0x55, 0x20, 0x44,
+  0x27, 0x33, 0x98, 0x92, 0x68, 0x12
+};
+static constexpr std::array<unsigned char, g_plen> pattern33
+{
+  0x00, 0x95, 0x51, 0x82, 0x86, 0x19,
+  0x94, 0x33, 0x42, 0x77, 0x71, 0x83
+};
+static constexpr std::array<unsigned char, g_plen> pattern34
+{
+  0x82, 0x94, 0x51, 0x80, 0x01, 0x89,
+  0x57, 0x86, 0x20, 0x90, 0x29, 0x11
+};
+static constexpr std::array<unsigned char, g_plen> pattern35
+{
+  0x68, 0x69, 0x34, 0x33, 0x88, 0x52,
+  0x94, 0x75, 0x84, 0x74, 0x90, 0x47
+};
+static constexpr std::array<unsigned char, g_plen> pattern36
+{
+  0x30, 0x70, 0x79, 0x61, 0x79, 0x55,
+  0x76, 0x96, 0x19, 0x14, 0x93, 0x22
+};
+static constexpr std::array<unsigned char, g_plen> pattern37
+{
+  0x47, 0x71, 0x90, 0x99, 0x34, 0x87,
+  0x97, 0x57, 0x51, 0x61, 0x90, 0x40
+};
+static constexpr std::array<unsigned char, g_plen> pattern38
+{
+  0x82, 0x99, 0x76, 0x51, 0x71, 0x91,
+  0x68, 0x98, 0x39, 0x81, 0x80, 0x33
+};
+static constexpr std::array<unsigned char, g_plen> pattern39
+{
+  0x01, 0x68, 0x80, 0x13, 0x41, 0x46,
+  0x88, 0x91, 0x82, 0x62, 0x63, 0x14
+};
+
+// Array containing all the patterns.
+static constexpr std::array<std::array<unsigned char, g_plen>, g_numberOfPatterns> patterns
+{
+  pattern0, pattern1, pattern2, pattern3, pattern4,
+  pattern5, pattern6, pattern7, pattern8, pattern9,
+  pattern10, pattern11, pattern12, pattern13, pattern14,
+  pattern15, pattern16, pattern17, pattern18, pattern19,
+  pattern20, pattern21, pattern22, pattern23, pattern24,
+  pattern25, pattern26, pattern27, pattern28, pattern29,
+  pattern30, pattern31, pattern32, pattern33, pattern34,
+  pattern35, pattern36, pattern37, pattern38, pattern39
+};
+
+// Generates the krenq-status of a file.
+// Encryption status.
+// Prefix pattern, suffix pattern, middle marker.
+// File size.
+// File key hash.
+void Krenq::krenq_status(const std::string& filename, Krenq::type_estatus& estatus)
+{
+  estatus = {false, {-1, -1, -1}, 0, {}};
+  std::fstream ifile{filename, std::ios::in | std::ios::binary};
+  ifile.seekg(0, std::ios::end);
+  size_t filesize{static_cast<size_t>(ifile.tellg())};
+  std::get<2>(estatus) = filesize;
+  // Minimum encrypted file size is 243 bytes so if smaller, you
+  // know what to do.
+  if (filesize < 32 + 12 + 1 + 12 + 154 + 32)
+  {
+    ifile.close();
+    return;
+  }
+
+  std::array<unsigned char, 12> buffer{};
+  ifile.seekg(0 + 32, std::ios::beg);
+  ifile.read(reinterpret_cast<char*>(buffer.data()), 12);
+  auto iter{std::find(patterns.begin(), patterns.end(), buffer)};
+  if (iter == patterns.end())
+  {
+    ifile.close();
+    return;
+  }
+  std::get<0>(std::get<1>(estatus)) = (iter - patterns.begin());
+  
+  ifile.seekg(0+ 32 + 12, std::ios::beg);
+  char marker{};
+  ifile.get(marker);
+  auto iter2{std::find(g_middleMarkers.begin(), g_middleMarkers.end(), marker)};
+  if (iter2 == g_middleMarkers.end())
+  {
+    ifile.close();
+    return;
+  }
+  std::get<2>(std::get<1>(estatus)) = iter2 - g_middleMarkers.begin();
+  
+  std::array<unsigned char, 12> buffer2{};
+  ifile.seekg(0+ 32 + 12 + 1, std::ios::beg);
+  ifile.read(reinterpret_cast<char*>(buffer2.data()), 12);
+  auto iter3{std::find(patterns.begin(), patterns.end(), buffer2)};
+  if (iter3 == patterns.end())
+  {
+    ifile.close();
+    return;
+  }
+  std::get<1>(std::get<1>(estatus)) = iter3 - patterns.begin();
+  std::get<0>(estatus) = true;
+  std::array<unsigned char, 32> buffer3{};
+  ifile.seekg(filesize - 32, std::ios::beg);
+  ifile.read(reinterpret_cast<char*>(buffer3.data()), 32);
+  std::string keyhash{};
+  for (unsigned char c : buffer3) keyhash += c;
+  std::get<3>(estatus) = keyhash;
+  ifile.close();
+}
+
+// Generate random prefix and optionally selected ones.
+void Krenq::make_prefix(std::string& prefix, short i1, short i2, short i3)
+{
+  prefix = {};
+  prefix.reserve(2 * pattern0.size() + 1);
+  short index1{static_cast<short>(this->get_randomN_from_limit(0, g_numberOfPatterns - 1))};
+  short index2{static_cast<short>(this->get_randomN_from_limit(0, g_numberOfPatterns - 1))};
+  short index_middle{static_cast<short>(this->get_randomN_from_limit(0, g_plen - 1))};
+  if (i1 != -1 and i2 != -1 and i3 != -1)
+  {
+    index1 = i1;
+    index2 = i2;
+    index_middle = i3;
+  }
+  for (auto c : patterns[index1]) prefix += c;
+  prefix += g_middleMarkers[index_middle];
+  for (auto c : patterns[index2]) prefix += c;
+}
+
+
