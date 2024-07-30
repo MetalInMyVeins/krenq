@@ -101,6 +101,8 @@ So in this way, `binary` would be dependent on `libkrenq.so` of current director
 ## To Do:
 - A logger that keeps track of detailed encryption and decryption information per runtime.
 - Users should be able to directly load the decrypted state of encrypted files in memory depending on available system memory.
+- Implement AES encryption algorithm from scratch and integrate.
+- Preferably write sha-256 from scratch and integrate.
 
 ## License:
 See the `LICENSE` file for licensing information.
