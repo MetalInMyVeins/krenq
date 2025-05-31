@@ -4,6 +4,7 @@ set(pn ${CMAKE_PROJECT_NAME})
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -static-libgcc -static-libstdc++")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_compile_options(-std=c++20 -g0 -Wall -Wextra -Wpedantic -Werror -O3 -march=native -funroll-loops -finline-functions -fomit-frame-pointer -fno-rtti -falign-functions)
 
